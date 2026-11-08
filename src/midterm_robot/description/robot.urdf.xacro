@@ -185,5 +185,27 @@
       <topic>/bumper_states</topic>
     </sensor>
   </gazebo>
-
+<!-- Sonar / Range Sensor -->
+<gazebo reference="sonar_link">
+  <sensor name="sonar_sensor" type="ray">
+    <always_on>true</always_on>
+    <update_rate>10</update_rate>
+    <visualize>true</visualize>
+    <topic>/sonar/range</topic>
+    <ray>
+      <scan>
+        <horizontal>
+          <samples>5</samples>
+          <resolution>1</resolution>
+          <min_angle>-0.1</min_angle>
+          <max_angle>0.1</max_angle>
+        </horizontal>
+      </scan>
+      <range>
+        <min>0.05</min>
+        <max>2.0</max>
+      </range>
+    </ray>
+  </sensor>
+</gazebo>
 </robot>
