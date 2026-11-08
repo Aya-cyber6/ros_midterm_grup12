@@ -30,6 +30,7 @@ setup(
     entry_points={
         'console_scripts': [
            'obstacle_avoider = midterm_robot.obstacle_avoider:main',
+           'sonar_safety_node = midterm_robot.sonar_safety_node:main',
         ],
     },
 )
