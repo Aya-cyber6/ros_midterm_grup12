@@ -8,7 +8,7 @@
     <child link="base_link"/>
   </joint>
 
-  <!-- Govde -->
+  <!-- Govde (Chassis) -->
   <link name="base_link">
     <visual>
       <geometry><box size="0.4 0.3 0.1"/></geometry>
@@ -67,7 +67,9 @@
     <origin xyz="0.15 0 -0.05" rpy="0 0 0"/>
   </joint>
 
-  <!-- Sensor Linkleri -->
+  <!-- PHYSICAL SENSOR LINKS & JOINTS -->
+  
+  <!-- IMU Link -->
   <link name="imu_link"/>
   <joint name="imu_joint" type="fixed">
     <parent link="base_link"/>
@@ -75,13 +77,7 @@
     <origin xyz="0 0 0.05"/>
   </joint>
 
-  <link name="lidar_link"/>
-  <joint name="lidar_joint" type="fixed">
-    <parent link="base_link"/>
-    <child link="lidar_link"/>
-    <origin xyz="0.1 0 0.1"/>
-  </joint>
-
+  <!-- Camera Link -->
   <link name="camera_link"/>
   <joint name="camera_joint" type="fixed">
     <parent link="base_link"/>
@@ -89,6 +85,7 @@
     <origin xyz="0.2 0 0.05"/>
   </joint>
 
+  <!-- Bumper Link -->
   <link name="bumper_link">
     <collision name="bumper_collision">
       <geometry><box size="0.02 0.3 0.1"/></geometry>
@@ -99,6 +96,17 @@
     <child link="bumper_link"/>
     <origin xyz="0.2 0 0"/>
   </joint>
+
+  <!-- LiDAR Link (Restored) -->
+  <link name="lidar_link"/>
+  <joint name="lidar_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="lidar_link"/>
+    <origin xyz="0.1 0 0.1" rpy="0 0 0"/>
+  </joint>
+
+
+  <!-- GAZEBO PLUGINS & SENSOR CONFIGURATIONS -->
 
   <!-- Gazebo Diferansiyel Surus -->
   <gazebo>
@@ -118,31 +126,23 @@
     </plugin>
   </gazebo>
 
-  <!-- LiDAR -->
+  <!-- LiDAR Sensor -->
   <gazebo reference="lidar_link">
     <sensor name="lidar" type="gpu_lidar">
       <update_rate>10</update_rate>
+      <visualize>true</visualize>
       <topic>/scan</topic>
+      <gz_frame_id>lidar_link</gz_frame_id>
       <ray>
         <scan>
-          <horizontal>
-            <samples>360</samples>
-            <resolution>1</resolution>
-            <min_angle>-3.14</min_angle>
-            <max_angle>3.14</max_angle>
-          </horizontal>
+          <horizontal><samples>360</samples><resolution>1</resolution><min_angle>-3.14</min_angle><max_angle>3.14</max_angle></horizontal>
         </scan>
-        <range>
-          <min>0.1</min>
-          <max>10.0</max>
-        </range>
+        <range><min>0.1</min><max>10.0</max><resolution>0.01</resolution></range>
       </ray>
-      <always_on>1</always_on>
-      <visualize>true</visualize>
     </sensor>
   </gazebo>
 
-  <!-- Kamera -->
+  <!-- Kamera Sensor -->
   <gazebo reference="camera_link">
     <sensor name="camera" type="camera">
       <update_rate>30.0</update_rate>
@@ -164,7 +164,7 @@
     </sensor>
   </gazebo>
 
-  <!-- IMU -->
+  <!-- IMU Sensor -->
   <gazebo reference="imu_link">
     <sensor name="imu_sensor" type="imu">
       <always_on>true</always_on>
@@ -174,7 +174,7 @@
     </sensor>
   </gazebo>
 
-  <!-- Bumper Carpisma Sensoru -->
+  <!-- Bumper Contact Sensor -->
   <gazebo reference="bumper_link">
     <sensor name="bumper_sensor" type="contact">
       <always_on>true</always_on>
