@@ -48,8 +48,16 @@ def generate_launch_description():
             '/scan@sensor_msgs/msg/LaserScan@gz.msgs.LaserScan',
             '/camera/image_raw@sensor_msgs/msg/Image@gz.msgs.Image',
             '/imu@sensor_msgs/msg/Imu@gz.msgs.IMU',
-            '/bumper_states@gazebo_msgs/msg/ContactsState@gz.msgs.Contacts'
+            '/bumper_states@gazebo_msgs/msg/ContactsState@gz.msgs.Contacts',
+            '/sonar/range@sensor_msgs/msg/Range@gz.msgs.LaserScan'
         ],
+        output='screen'
+    )
+
+    sonar_safety_node = Node(
+        package='midterm_robot',
+        executable='sonar_safety_node',
+        name='sonar_safety_node',
         output='screen'
     )
 
@@ -58,5 +66,6 @@ def generate_launch_description():
         robot_state_publisher,
         spawn_entity,
         rviz,
-        bridge
+        bridge,
+        sonar_safety_node
     ])
