@@ -48,7 +48,7 @@ def generate_launch_description():
             '/scan@sensor_msgs/msg/LaserScan@gz.msgs.LaserScan',
             '/camera/image_raw@sensor_msgs/msg/Image@gz.msgs.Image',
             '/imu@sensor_msgs/msg/Imu@gz.msgs.IMU',
-            '/bumper_states@gazebo_msgs/msg/ContactsState@gz.msgs.Contacts'
+            '/bumper_states@ros_gz_interfaces/msg/Contacts@gz.msgs.Contacts',
         ],
         output='screen'
     )
