@@ -1,40 +1,53 @@
-#!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
+from sensor_msgs.msg import LaserScan
+import math
 
 class ObstacleAvoider(Node):
     def __init__(self):
         super().__init__('obstacle_avoider')
-        # LiDAR verisine abone ol
+        self.publisher_ = self.create_publisher(Twist, '/cmd_vel', 10)
         self.subscription = self.create_subscription(LaserScan, '/scan', self.scan_callback, 10)
-        # Hareket komutları yayınla
-        self.publisher = self.create_publisher(Twist, '/cmd_vel', 10)
-        self.safe_distance = 0.5 # 50 cm engel mesafesi
+        self.cmd = Twist()
 
     def scan_callback(self, msg):
-        twist = Twist()
-        # Önümüzdeki (0 derece) lazer ışınlarının minimum mesafesini kontrol et
-        front_ranges = msg.ranges[len(msg.ranges)//2 - 20 : len(msg.ranges)//2 + 20]
-        min_distance = min(front_ranges) if front_ranges else float('inf')
+        # LiDAR'ın ön kısmındaki 40 derecelik açıyı kontrol et
+        center_index = len(msg.ranges) // 2
+        front_ranges = msg.ranges[center_index - 20 : center_index + 20]
+        
+        # Sonsuz (inf) değerleri filtrele
+        valid_ranges = [r for r in front_ranges if not math.isinf(r) and not math.isnan(r)]
+        min_distance = min(valid_ranges) if valid_ranges else 10.0
 
-        if min_distance < self.safe_distance:
+        if min_distance < 0.5:
             self.get_logger().info('Engel Tespit Edildi! Dönülüyor...')
-            twist.linear.x = 0.0
-            twist.angular.z = 0.5 # Sağa/Sola dön
+            self.cmd.linear.x = 0.0
+            self.cmd.angular.z = 0.5  # Dönmeye başla
         else:
-            twist.linear.x = 0.3 # İleri git
-            twist.angular.z = 0.0
+            self.cmd.linear.x = 0.5   # İleri git
+            self.cmd.angular.z = 0.0  # Düzeltme: Dönüşü durdur, düz git
 
-        self.publisher.publish(twist)
+        self.publisher_.publish(self.cmd)
+
+    def stop_robot(self):
+        # Düğüm kapatıldığında robotu durdur
+        self.cmd.linear.x = 0.0
+        self.cmd.angular.z = 0.0
+        self.publisher_.publish(self.cmd)
+        self.get_logger().info('Robot durduruldu.')
 
 def main(args=None):
     rclpy.init(args=args)
     node = ObstacleAvoider()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.stop_robot()
+        node.destroy_node()
+        rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
