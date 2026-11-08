@@ -5,7 +5,6 @@ from launch_ros.actions import Node
 import os
 from ament_index_python.packages import get_package_share_directory
 
-
 def generate_launch_description():
     pkg_dir = get_package_share_directory('midterm_robot')
     urdf_file = os.path.join(pkg_dir, 'description', 'robot.urdf.xacro')
@@ -14,6 +13,13 @@ def generate_launch_description():
     gazebo = ExecuteProcess(
         cmd=['gz', 'sim', '-r', world_file],
         output='screen'
+    )
+
+    # Restored: Required for wheels to appear in RViz
+    joint_state_publisher = Node(
+        package='joint_state_publisher',
+        executable='joint_state_publisher',
+        name='joint_state_publisher'
     )
 
     robot_state_publisher = Node(
@@ -29,7 +35,8 @@ def generate_launch_description():
         executable='create',
         arguments=[
             '-topic', 'robot_description',
-            '-name', 'custom_robot'
+            '-name', 'custom_robot',
+            '-z', '0.2'  # FIX: Drops the robot from the air so it doesn't clip into the floor
         ],
         output='screen'
     )
@@ -49,12 +56,14 @@ def generate_launch_description():
             '/camera/image_raw@sensor_msgs/msg/Image@gz.msgs.Image',
             '/imu@sensor_msgs/msg/Imu@gz.msgs.IMU',
             '/bumper_states@ros_gz_interfaces/msg/Contacts@gz.msgs.Contacts',
+            '/sonar/range@sensor_msgs/msg/Range@gz.msgs.LaserScan', # Restored Ramazan's Sonar
         ],
         output='screen'
     )
 
     return LaunchDescription([
         gazebo,
+        joint_state_publisher,
         robot_state_publisher,
         spawn_entity,
         rviz,
