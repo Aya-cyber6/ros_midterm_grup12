@@ -206,6 +206,14 @@
         <max>2.0</max>
       </range>
     </ray>
+    <plugin name="gazebo_ros_sonar_controller" filename="libgazebo_ros_ray_sensor.so">
+        <ros>
+          <remapping>~/out:=/sonar/range</remapping>
+        </ros>
+        <output_type>sensor_msgs/Range</output_type>
+        <radiation_type>ultrasound</radiation_type>
+        <frame_name>sonar_link</frame_name>
+      </plugin>
   </sensor>
 </gazebo>
 </robot>
