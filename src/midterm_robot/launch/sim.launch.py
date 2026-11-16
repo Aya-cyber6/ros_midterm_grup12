@@ -3,6 +3,7 @@ from launch.actions import DeclareLaunchArgument, ExecuteProcess
 from launch.substitutions import Command, LaunchConfiguration
 from launch.conditions import IfCondition
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 import os
 from ament_index_python.packages import get_package_share_directory
 
@@ -68,11 +69,16 @@ def generate_launch_description():
     controller = Node(
         package='midterm_robot',
         executable='obstacle_avoider',
+        parameters=[{'turn_angle_deg': ParameterValue(
+            LaunchConfiguration('turn_angle_deg'), value_type=float)}],
         output='screen',
     )
 
     return LaunchDescription([
         DeclareLaunchArgument('rviz', default_value='false'),
+        DeclareLaunchArgument(
+            'turn_angle_deg', default_value='45.0',
+            description='Relative obstacle turn in degrees; positive is left.'),
         controller,
         gazebo,
         joint_state_publisher,
