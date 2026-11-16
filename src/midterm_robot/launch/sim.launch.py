@@ -69,7 +69,7 @@ def generate_launch_description():
     controller = Node(
         package='midterm_robot',
         executable='obstacle_avoider',
-        parameters=[{'turn_angle_deg': ParameterValue(
+        parameters=[{'use_sim_time': True, 'turn_angle_deg': ParameterValue(
             LaunchConfiguration('turn_angle_deg'), value_type=float)}],
         output='screen',
     )

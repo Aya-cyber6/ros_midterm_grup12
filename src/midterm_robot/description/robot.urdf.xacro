@@ -94,7 +94,12 @@
 
   <!-- Bumper Link -->
   <link name="bumper_link">
-    <collision name="bumper_collision">
+    <inertial>
+      <mass value="0.05"/>
+      <inertia ixx="0.000416667" ixy="0" ixz="0"
+               iyy="0.000043333" iyz="0" izz="0.000376667"/>
+    </inertial>
+    <collision>
       <geometry><box size="0.02 0.3 0.1"/></geometry>
     </collision>
   </link>
@@ -103,6 +108,9 @@
     <child link="bumper_link"/>
     <origin xyz="0.2 0 0"/>
   </joint>
+  <gazebo reference="bumper_joint">
+    <preserveFixedJoint>true</preserveFixedJoint>
+  </gazebo>
 
   <!-- LiDAR Link (Restored) -->
   <link name="lidar_link"/>
@@ -180,7 +188,7 @@
       <always_on>true</always_on>
       <update_rate>50.0</update_rate>
       <contact>
-        <collision>bumper_collision</collision>
+        <collision>bumper_link_collision</collision>
       </contact>
       <topic>/bumper_states</topic>
     </sensor>

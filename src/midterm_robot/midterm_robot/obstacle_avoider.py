@@ -7,10 +7,14 @@ import rclpy
 from geometry_msgs.msg import Twist
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
+from rclpy.clock import Clock
+from rclpy.clock_type import ClockType
+from ros_gz_interfaces.msg import Contacts
 from sensor_msgs.msg import Imu, LaserScan, Range
 from std_msgs.msg import Float64
 
 from midterm_robot.heading import angle_difference, HeadingController, quaternion_yaw
+from midterm_robot.recovery import CollisionRecovery
 from midterm_robot.safety import front_distance, range_distance
 
 
@@ -21,6 +25,7 @@ class ObstacleAvoider(Node):
         super().__init__('obstacle_avoider')
         angle = self.declare_parameter('turn_angle_deg', 45.0).value
         self.heading = HeadingController(float(angle))
+        self.recovery = CollisionRecovery()
         self.publisher_ = self.create_publisher(Twist, '/cmd_vel', 10)
         self.deviation_pub = self.create_publisher(
             Float64, '/heading_deviation_deg', 10)
@@ -38,8 +43,11 @@ class ObstacleAvoider(Node):
             Range, '/sonar/range', self.sonar_callback, qos_profile_sensor_data)
         self.imu_sub = self.create_subscription(
             Imu, '/imu', self.imu_callback, qos_profile_sensor_data)
+        self.bumper_sub = self.create_subscription(
+            Contacts, '/bumper_states', self.bumper_callback, qos_profile_sensor_data)
         # Wall-clock timer can stop commands even if simulation time pauses.
-        self.timer = self.create_timer(0.05, self.control)
+        self.control_clock = Clock(clock_type=ClockType.STEADY_TIME)
+        self.timer = self.create_timer(0.05, self.control, clock=self.control_clock)
         self.get_logger().info(
             f'Waiting for LiDAR, sonar and IMU; turn angle: {angle:.1f} deg.')
 
@@ -70,8 +78,37 @@ class ObstacleAvoider(Node):
             self.get_logger().info(f'Heading deviation: {deviation:+.1f} deg')
             self.last_heading_log = self.imu_time
 
+    def bumper_callback(self, msg):
+        if not msg.contacts:
+            return
+        sim_now = self.get_clock().now().nanoseconds / 1e9
+        if self.recovery.contact(sim_now):
+            self.heading.target_yaw = None
+            self.stop_robot()
+            if self.recovery.state == 'blocked':
+                self.get_logger().error(self.recovery.reason + '; restart required.')
+            else:
+                self.get_logger().warn(
+                    'Bumper contact: stop, reverse at 0.1 m/s for 1 s, then turn left 45 deg.')
+
     def control(self):
         now = time.monotonic()
+        sim_now = self.get_clock().now().nanoseconds / 1e9
+        previous_state = self.recovery.state
+        recovery_command = self.recovery.command(
+            sim_now, self.lidar, self.sonar, self.yaw,
+            now - self.lidar_time, now - self.sonar_time, now - self.imu_time)
+        if recovery_command is not None:
+            command = Twist()
+            command.linear.x, command.angular.z = recovery_command
+            self.publisher_.publish(command)
+            if previous_state != self.recovery.state:
+                if self.recovery.state == 'blocked':
+                    self.get_logger().error(
+                        self.recovery.reason + '; stopped, restart required.')
+                else:
+                    self.get_logger().info('Collision recovery: ' + self.recovery.state)
+            return
         previous_target = self.heading.target_yaw
         linear, angular = self.heading.command(
             self.lidar, self.sonar, self.yaw,
