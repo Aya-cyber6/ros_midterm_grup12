@@ -1,35 +1,32 @@
-#!/usr/bin/env python3
+"""Optional sonar monitor; velocity commands belong to obstacle_avoider."""
+
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Range
-from geometry_msgs.msg import Twist
+
+from midterm_robot.safety import range_distance
+
 
 class SonarSafetyNode(Node):
+    """Report nearby obstacles without competing for cmd_vel."""
+
     def __init__(self):
         super().__init__('sonar_safety_node')
-        
-        # Sonar/Range Sensör Verisi Dinleme
+        self.was_close = False
         self.sonar_sub = self.create_subscription(
-            Range,
-            '/sonar/range',
-            self.sonar_callback,
-            10
-        )
-        self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
-        self.get_logger().info('Sonar Safety Node operational.')
+            Range, '/sonar/range', self.sonar_callback, qos_profile_sensor_data)
 
     def sonar_callback(self, msg):
-        dist = msg.range
-        twist = Twist()
-        
-        # 0.4 metreye kadar yaklaşan engelde acil kaçınma
-        if dist < 0.4:
-            self.get_logger().warn(f'SONAR WARNING! Close-range obstacle at {dist:.2f}m. Evading!')
-            twist.linear.x = 0.0
-            twist.angular.z = 0.6
-            self.cmd_pub.publish(twist)
+        distance = range_distance(msg.range, msg.min_range, msg.max_range)
+        close = distance is not None and distance < 0.4
+        if close and not self.was_close:
+            self.get_logger().warn('Sonar obstacle within 0.4 m.')
+        self.was_close = close
+
 
 def main(args=None):
+    """Run the optional monitor."""
     rclpy.init(args=args)
     node = SonarSafetyNode()
     try:
@@ -38,7 +35,9 @@ def main(args=None):
         pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()

@@ -9,6 +9,11 @@
     <!-- Contact Plugin to enable the Bumper Sensor -->
     <plugin filename="gz-sim-contact-system" name="gz::sim::systems::Contact"/>
 
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu"/>
+
     <!-- Light Source -->
     <light type="directional" name="sun">
       <cast_shadows>true</cast_shadows>
@@ -91,3 +96,4 @@
 
   </world>
 </sdf>
+

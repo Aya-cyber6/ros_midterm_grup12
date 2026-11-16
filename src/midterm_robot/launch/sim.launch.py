@@ -1,6 +1,7 @@
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess
-from launch.substitutions import Command
+from launch.actions import DeclareLaunchArgument, ExecuteProcess
+from launch.substitutions import Command, LaunchConfiguration
+from launch.conditions import IfCondition
 from launch_ros.actions import Node
 import os
 from ament_index_python.packages import get_package_share_directory
@@ -26,6 +27,7 @@ def generate_launch_description():
         package='robot_state_publisher',
         executable='robot_state_publisher',
         parameters=[{
+            'use_sim_time': True,
             'robot_description': Command(['xacro ', urdf_file])
         }]
     )
@@ -44,6 +46,7 @@ def generate_launch_description():
     rviz = Node(
         package='rviz2',
         executable='rviz2',
+        condition=IfCondition(LaunchConfiguration('rviz')),
         output='screen'
     )
 
@@ -51,17 +54,26 @@ def generate_launch_description():
         package='ros_gz_bridge',
         executable='parameter_bridge',
         arguments=[
-            '/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist',
-            '/scan@sensor_msgs/msg/LaserScan@gz.msgs.LaserScan',
-            '/camera/image_raw@sensor_msgs/msg/Image@gz.msgs.Image',
-            '/imu@sensor_msgs/msg/Imu@gz.msgs.IMU',
-            '/bumper_states@ros_gz_interfaces/msg/Contacts@gz.msgs.Contacts',
-            '/sonar/range@sensor_msgs/msg/Range@gz.msgs.LaserScan', # Restored Ramazan's Sonar
+            '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
+            '/cmd_vel@geometry_msgs/msg/Twist]gz.msgs.Twist',
+            '/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
+            '/camera/image_raw@sensor_msgs/msg/Image[gz.msgs.Image',
+            '/imu@sensor_msgs/msg/Imu[gz.msgs.IMU',
+            '/bumper_states@ros_gz_interfaces/msg/Contacts[gz.msgs.Contacts',
+            '/sonar/range@sensor_msgs/msg/Range[gz.msgs.LaserScan', # Restored Ramazan's Sonar
         ],
         output='screen'
     )
 
+    controller = Node(
+        package='midterm_robot',
+        executable='obstacle_avoider',
+        output='screen',
+    )
+
     return LaunchDescription([
+        DeclareLaunchArgument('rviz', default_value='false'),
+        controller,
         gazebo,
         joint_state_publisher,
         robot_state_publisher,
